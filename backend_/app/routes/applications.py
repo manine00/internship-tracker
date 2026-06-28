@@ -5,7 +5,7 @@ from ..db import get_db
 from ..models.application import Application
 from ..models.company import Company
 from sqlalchemy.future import select
-from sqlalchemy import join
+from sqlalchemy import outerjoin, func
 
 router = APIRouter()
 
@@ -17,17 +17,19 @@ async def get_applications(db: AsyncSession = Depends(get_db)):
     stmt = (
         select(
             Application.id,
-            Application.position,
+            # Use coalesce to replace NULLs with safe fallback strings
+            func.coalesce(Application.position, "Analyzing...").label("position"),
             Application.sent_date,
             Application.email_id,
             Application.status,
-            Application.summary,
-            Company.name.label("company_name")
-        ).join(Company, Application.company_id == Company.id)
+            func.coalesce(Application.summary, "").label("summary"),
+            func.coalesce(Company.name, "Pending AI").label("company_name")
+        )
+        # Use outerjoin so we don't hide unprocessed emails
+        .outerjoin(Company, Application.company_id == Company.id) 
     )
     result = await db.execute(stmt)
     return [dict(row._mapping) for row in result.all()]
-
 
 
 

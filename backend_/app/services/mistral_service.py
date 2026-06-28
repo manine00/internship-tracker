@@ -59,29 +59,17 @@ def parse_mistral_response(text, keys) :
     return results
 
 
-async def classify_application_email(mail) :
+async def classify_application_email(raw_email_text: str):
     """
     Classify an email and extract internship application details using Mistral AI.
-    Expects a mailparser object.
+    Expects a raw string of the email content.
     """
-    # Extract raw components
-    subject = mail.subject or ""
-    from_email = mail.from_[0][1] if mail.from_ else ""
-    to_email = mail.to[0][1] if mail.to else ""
-    body = mail.body or ""
-    date = mail.date or datetime.now()
-
     prompt = f"""
     You are a structured data extraction assistant.
     Analyze the following email and extract internship application details.
 
     EMAIL DETAILS:
-    Subject: {subject}
-    From: {from_email}
-    To: {to_email}
-    Date: {date}
-    Body:
-    {body}
+    {raw_email_text}
 
     From the following email, extract:
     - company name
@@ -89,25 +77,21 @@ async def classify_application_email(mail) :
     - status (e.g. Awaiting Reply, Rejected, Accepted) if mentioned
     - summary : a short summary of the mail
 
-    Return valid JSON with keys:
     Return a JSON object ***only*** with the following fields:
     {{
         "company": string,
         "position": string,
         "internship_related": boolean,
-        "status": string,  // e.g., "Awaiting Reply", "Accepted", "Rejected"
-        "sent_date": ISO 8601 date string
+        "status": string,  
+        "sent_date": ISO 8601 date string,
         "summary": string
     }}
-    if you don't understand the task, in the summary field metion 'not understood'
+    if you don't understand the task, in the summary field mention 'not understood'
     """
-
-    # Extract response text
+    
     content = await mistral_model_response(prompt)
-
-    keys = ["company", "position", "status","internship_related","sent_date","summary"]
-
-    return parse_mistral_response(content,keys)
+    keys = ["company", "position", "status", "internship_related", "sent_date", "summary"]
+    return parse_mistral_response(content, keys)
 
 
 async def extract_internship_description(description):

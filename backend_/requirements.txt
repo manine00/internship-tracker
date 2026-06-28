@@ -6,4 +6,4 @@ python-dotenv
 requests
 mail-parser
 imapclient
-mistralai
+mistralai<2.0.0

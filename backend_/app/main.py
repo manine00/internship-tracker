@@ -4,6 +4,7 @@ from .db import init_db, engine, Base
 from fastapi.middleware.cors import CORSMiddleware
 from .services.imap_service import fetch_sent_applications
 import asyncio
+from .services.imap_service import fetch_sent_applications, process_ai_queue
 
 app = FastAPI(title="Internship Tracker API")
 
@@ -27,10 +28,11 @@ async def startup():
     async def periodic_fetch():
         while True:
             try:
-                await fetch_sent_applications()
+                await fetch_sent_applications()  # Phase 1: Fast Ingest
+                await process_ai_queue()         # Phase 2: Slow AI Processing
             except Exception as e:
-                print(f"Error during fetch: {e}", flush=True)
-            await asyncio.sleep(60 * 5)  # every 5 minutes
+                print(f"Error during loop: {e}", flush=True)
+            await asyncio.sleep(60 * 5)
 
     asyncio.create_task(periodic_fetch())
 
